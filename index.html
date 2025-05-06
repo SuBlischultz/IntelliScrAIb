@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="./static/css/output.css">
+    <title>AI Content Generator</title>
+</head>
+<body>
+    <nav class="bg-black">
+        <div class="container mx-auto px-4">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex-shrink-0">
+                    <a href="#" class="text-white font-bold">Intelli-ScrAIb</a>
+                </div>
+                <!-- Desktop Navigation (Always Visible on Large Screens) -->
+                <div class="hidden md:flex">
+                    <a href="#" class="text-white ml-4">Home</a>
+                    <a href="/about" class="text-white ml-4">About</a>
+                    <a href="/prompts" class="text-white ml-4">Prompts</a>
+                    <a href="/contact" class="text-white ml-4">Contact Us</a>
+                </div>
+                <!-- Mobile Menu Button (Always Visible) -->
+                <div class="md:hidden">
+                    <button id="menuButton" type="button" class="text-white focus:outline-none">
+                        <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                            xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M4 6h16M4 12h16M4 18h16"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <!-- Mobile Navigation Links (Hidden Initially) -->
+            <div id="mobileNav" class="md:hidden hidden">
+                <a href="#" class="block text-white py-2 px-4">Home</a>
+                <a href="/about" class="block text-white py-2 px-4">About</a>
+                <a href="/prompts" class="block text-white py-2 px-4">Prompts</a>
+                <a href="/contact" class="block text-white py-2 px-4">Contact Us</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mx-auto my-4 px-4 md:px-0">
+        <h1 class="text-xl font-bold text-gray-900">AI powered Intelligent Article Generator</h1>
+
+        <div class="border p-2 w-full mt-1 flex items-center">
+            <textarea id="topicInput" class="border my-1 p-2 w-full" placeholder="Enter the topic you want to generate an article about"></textarea>
+            <button id="voiceSearchBtn" class="bg-black text-white rounded-full w-12 h-12 flex justify-center items-center shadow-md transition-transform duration-200 hover:scale-110 hover:shadow-lg active:scale-95 active:shadow-sm">🎤</button>
+        </div>
+
+        <div class="my-2">
+            <label for="toneSelect" class="text-sm text-gray-700">Tone</label>
+            <select id="toneSelect" class="border p-2 w-full mt-1">
+                <option value="informative">Informative</option>
+                <option value="professional">Professional</option>
+                <option value="casual">Casual</option>
+                <option value="persuasive">Persuasive</option>
+            </select>
+        </div>
+
+        <div class="my-2">
+            <label for="audienceSelect" class="text-sm text-gray-700">Audience</label>
+            <select id="audienceSelect" class="border p-2 w-full mt-1">
+                <option value="general">General</option>
+                <option value="students">Students</option>
+                <option value="professionals">Professionals</option>
+                <option value="academicians">Academicians</option>
+            </select>
+        </div>
+
+        <div class="my-2">
+            <label for="lengthSelect" class="text-sm text-gray-700">Length</label>
+            <select id="lengthSelect" class="border p-2 w-full mt-1">
+                <option value="concise">Concise</option>
+                <option value="brief">Brief</option>
+                <option value="elaborate">Elaborate</option>
+            </select>
+        </div>
+
+        <button id="submitBtn" class="bg-black text-white px-4 py-2 my-1 rounded">Generate Article</button>
+        <div id="content" class="bg-gray-200 p-2 my-4">Your content will show up here</div>
+
+        <button id="evaluateBtn" class="bg-black text-white px-4 py-2 my-1 rounded">Evaluate Content</button>
+        <div id="evaluationResult" class="bg-gray-100 p-2 my-4">Evaluation results will show up here</div>
+
+        <h2 class="text-lg font-bold text-gray-900 mt-4">Ask Questions</h2>
+        <div id="querySection">
+            <textarea id="queryInput" class="border p-2 w-full mt-1" placeholder="Ask a question about the article..."></textarea>
+            <button id="queryBtn" class="bg-black text-white px-4 py-2 mt-2 rounded">Ask</button>
+            <button id="clearChatBtn" class="bg-black text-white px-4 py-2 mt-2 rounded hidden">Clear Chat</button>
+        </div>
+        <div id="queryResponses" class="bg-gray-100 p-2 my-4"></div>
+    </div>
+
+    <script>
+        const menuButton = document.querySelector('#menuButton'); 
+        const mobileNav = document.querySelector('#mobileNav');
+
+        menuButton.addEventListener('click', () => {
+            mobileNav.classList.toggle('hidden');
+        });
+
+        const formatContent = (text) => {
+            if (!text) return '';
+            
+            // First handle code blocks to prevent markdown conversion inside them
+            let formattedText = text
+                .replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>')
+                .replace(/`([^`]+)`/g, '<code>$1</code>');
+            
+            // Then handle other markdown
+            formattedText = formattedText
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                .replace(/#{4}\s+(.*)/g, '<h4>$1</h4>')
+                .replace(/#{3}\s+(.*)/g, '<h3>$1</h3>')
+                .replace(/#{2}\s+(.*)/g, '<h2>$1</h2>')
+                .replace(/#\s+(.*)/g, '<h1>$1</h1>')
+                .replace(/\n/g, '<br>')
+                .replace(/^\s*-\s*(.*)$/gm, '<li>$1</li>')
+                .replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>')
+                .replace(/^\s*\d+\.\s*(.*)$/gm, '<li>$1</li>')
+                .replace(/(<li>.*<\/li>\n?)+/g, '<ol>$&</ol>');
+            
+            return formattedText;
+        };
+    
+        // Speech Recognition Setup
+        const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+        recognition.lang = "en-US";
+    
+        document.querySelector('#voiceSearchBtn').addEventListener('click', () => {
+            recognition.start();
+        });
+    
+        recognition.addEventListener('result', (event) => {
+            document.querySelector('#topicInput').value = event.results[0][0].transcript;
+        });
+    
+        // Restore topic, generated article, and queries from SessionStorage
+        window.addEventListener('load', () => {
+            document.querySelector('#topicInput').value = sessionStorage.getItem('topicInput') || '';
+            document.querySelector('#toneSelect').value = sessionStorage.getItem('toneSelect') || 'informative';
+            document.querySelector('#audienceSelect').value = sessionStorage.getItem('audienceSelect') || 'general';
+            document.querySelector('#lengthSelect').value = sessionStorage.getItem('lengthSelect') || 'concise';
+            document.querySelector('#content').innerHTML = sessionStorage.getItem('generatedArticle') || 'Your content will show up here';
+    
+            const queryResponses = document.querySelector('#queryResponses');
+            let chatHistory = JSON.parse(sessionStorage.getItem('queryResponses')) || [];
+            
+            // Keep only last 15 queries stored
+            chatHistory = chatHistory.slice(-15);
+            sessionStorage.setItem('queryResponses', JSON.stringify(chatHistory));
+    
+            queryResponses.innerHTML = chatHistory.join('');
+            if (chatHistory.length > 0) document.querySelector('#clearChatBtn').classList.remove('hidden');
+        });
+    
+        document.querySelector('#submitBtn').addEventListener('click', async () => {
+            const topicInput = document.querySelector('#topicInput');
+            const prompt = topicInput.value.trim();
+            const tone = document.querySelector('#toneSelect').value;
+            const audience = document.querySelector('#audienceSelect').value;
+            const length = document.querySelector('#lengthSelect').value;
+            const contentDisplay = document.querySelector('#content');
+    
+            if (!prompt) {
+                contentDisplay.innerHTML = '<p style="color: red;">Please enter a valid topic!</p>';
+                return;
+            }
+    
+            // Save input state
+            sessionStorage.setItem('topicInput', prompt);
+            sessionStorage.setItem('toneSelect', tone);
+            sessionStorage.setItem('audienceSelect', audience);
+            sessionStorage.setItem('lengthSelect', length);
+    
+            contentDisplay.innerHTML = '<p style="color: gray;">Generating content...</p>';
+    
+            try {
+                const response = await fetch('/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt, tone, audience, length })
+                });
+    
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+    
+                const data = await response.json();
+                contentDisplay.innerHTML = formatContent(data.output);
+                sessionStorage.setItem('generatedArticle', contentDisplay.innerHTML);
+            } catch (error) {
+                contentDisplay.innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+                console.error('Error:', error);
+            }
+        });
+    
+        document.querySelector('#evaluateBtn').addEventListener('click', async () => {
+            const contentDisplay = document.querySelector('#content').innerText.trim();
+            const evaluationResult = document.querySelector('#evaluationResult');
+            
+            if (!contentDisplay || contentDisplay === 'Your content will show up here') {
+                evaluationResult.innerHTML = '<p style="color: red;">No content available for evaluation!</p>';
+                return;
+            }
+    
+            evaluationResult.innerHTML = '<p style="color: gray;">Evaluating content...</p>';
+    
+            try {
+                const response = await fetch('/evaluate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ content: contentDisplay })
+                });
+    
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+    
+                const data = await response.json();
+                evaluationResult.innerHTML = `<div><strong>Evaluation Result:</strong><br>${formatContent(data.results)}</div>`;
+            } catch (error) {
+                evaluationResult.innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+                console.error('Error:', error);
+            }
+        });
+    
+        document.querySelector('#queryBtn').addEventListener('click', async () => {
+            const queryInput = document.querySelector('#queryInput');
+            const query = queryInput.value.trim();
+            if (!query) return;
+    
+            const queryResponses = document.querySelector('#queryResponses');
+            const responseDiv = document.createElement('div');
+            responseDiv.innerHTML = `<p><strong>You:</strong> ${query}</p><p><em>Thinking...</em></p>`;
+            queryResponses.appendChild(responseDiv);
+            queryInput.value = '';
+    
+            // Get the generated article content
+            const generatedContent = document.querySelector('#content').innerText.trim();
+    
+            try {
+                const response = await fetch('/ask_query', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query, generated_content: generatedContent })
+                });
+    
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+    
+                const data = await response.json();
+                responseDiv.innerHTML = `<p><strong>You:</strong> ${query}</p><p><strong>Intelli-ScrAIb:</strong> ${formatContent(data.answer)}</p>`;
+                document.querySelector('#clearChatBtn').classList.remove('hidden');
+    
+                // Store only the last 15 queries in SessionStorage
+                let chatHistory = JSON.parse(sessionStorage.getItem('queryResponses')) || [];
+                chatHistory.push(responseDiv.outerHTML);
+                if (chatHistory.length > 15) chatHistory.shift(); // Remove oldest entry if exceeding 15
+                sessionStorage.setItem('queryResponses', JSON.stringify(chatHistory));
+            } catch (error) {
+                responseDiv.innerHTML = `<p><strong>You:</strong> ${query}</p><p style="color: red;"><strong>Error:</strong> ${error.message}</p>`;
+                console.error('Error:', error);
+            }
+        });
+    
+        document.querySelector('#clearChatBtn').addEventListener('click', () => {
+            document.querySelector('#queryResponses').innerHTML = '';
+            sessionStorage.removeItem('queryResponses');
+            document.querySelector('#clearChatBtn').classList.add('hidden');
+        });
+    </script>
+</body>
+</html>
